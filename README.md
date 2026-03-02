@@ -1,5 +1,3 @@
-# Double-Link-cheekar-premium-System-github.io
-double name cheek
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -71,7 +69,7 @@ double name cheek
     }
     .time { font-size: 13px; color: #ffbe0b; margin-bottom: 5px; font-weight:bold; }
     .list-text { white-space: pre-wrap; font-family: monospace; color: #e6edf3; }
-    .copy-btn, .delete-btn {
+    .copy-btn, .search-btn, .delete-btn {
       background: linear-gradient(90deg, #3a86ff, #8338ec);
       color: white;
       border: none;
@@ -82,7 +80,7 @@ double name cheek
       margin-top: 8px;
       margin-right: 8px;
     }
-    .copy-btn:hover {
+    .copy-btn:hover, .search-btn:hover {
       background: linear-gradient(90deg, #ff006e, #fb5607);
     }
     .delete-btn {
@@ -90,6 +88,13 @@ double name cheek
     }
     .delete-btn:hover {
       background: linear-gradient(90deg, #fb5607, #8338ec);
+    }
+    #searchResult {
+      margin-top: 12px;
+      padding: 10px;
+      background: #2a2f45;
+      border-radius: 6px;
+      border-left: 4px solid #ffbe0b;
     }
   </style>
 </head>
@@ -119,8 +124,8 @@ function check() {
 
         if (lineTrim.includes('➤')) {
             const parts = lineTrim.split('➤');
-            const numberPart = parts[0].trim();   // সিরিয়াল নম্বর
-            const namePart = parts[1].trim();     // নাম
+            const numberPart = parts[0].trim();
+            const namePart = parts[1].trim();
 
             if (!nameToPos.has(namePart)) {
                 nameToPos.set(namePart, []);
@@ -147,10 +152,9 @@ function check() {
     const finalResult = found ? output : "✅ কোনো ডুপ্লিকেট নাম পাওয়া যায়নি!";
     document.getElementById('result').innerHTML = finalResult;
 
-    // Activity তে স্থায়ীভাবে সংরক্ষণ (Local Storage সহ)
     const now = new Date();
     const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' };
-    const formatted = now.toLocaleDateString('bn-BD', options);
+    const formatted = now.toLocaleDateString('bn-BD', options) + " " + now.toLocaleTimeString('bn-BD');
 
     activityData.push({time: formatted, list: text, result: finalResult});
     localStorage.setItem("activityData", JSON.stringify(activityData));
@@ -167,8 +171,10 @@ function showActivity() {
                     <div class="time">সময়/তারিখ/বার: ${item.time}</div>
                     <div class="list-text">${item.list}</div>
                     <button class="copy-btn" onclick="copyList(${index})">📋 Copy List</button>
+                    <button class="search-btn" onclick="searchInList(${index})">🔍 Search Name</button>
                     <button class="delete-btn" onclick="deleteActivity(${index})">🗑️ Delete</button>
                     <div>${item.result}</div>
+                    <div id="searchResult-${index}" style="display:none;"></div>
                 </div>`;
         });
         document.getElementById('activity').innerHTML = activityOutput;
@@ -180,6 +186,8 @@ function copyList(index) {
     const textToCopy = activityData[index].list;
     navigator.clipboard.writeText(textToCopy).then(() => {
         alert("✅ লিস্ট কপি হয়ে গেছে!");
+    }).catch(() => {
+        alert("কপি করতে সমস্যা হয়েছে।");
     });
 }
 
@@ -189,6 +197,46 @@ function deleteActivity(index) {
         localStorage.setItem("activityData", JSON.stringify(activityData));
         showActivity();
     }
+}
+
+// নতুন ফাংশন: নির্দিষ্ট লিস্টের মধ্যে নাম সার্চ
+function searchInList(index) {
+    const listText = activityData[index].list;
+    const searchName = prompt("যে নামটি খুঁজতে চান তা লিখুন:").trim();
+    
+    if (!searchName) return;
+
+    const lines = listText.split('\n');
+    let foundPositions = [];
+    
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        
+        if (trimmed.includes('➤')) {
+            const parts = trimmed.split('➤');
+            const number = parts[0].trim();
+            const name = parts[1].trim();
+            
+            // Case insensitive + extra space normalize
+            if (name.toLowerCase().includes(searchName.toLowerCase())) {
+                foundPositions.push(number);
+            }
+        }
+    });
+
+    const resultDiv = document.getElementById(`searchResult-${index}`);
+    
+    if (foundPositions.length > 0) {
+        resultDiv.innerHTML = `
+            <strong style="color:#ffbe0b">${searchName}</strong> পাওয়া গেছে ${foundPositions.length} বার<br>
+            পজিশন: ${foundPositions.join(', ')}
+        `;
+    } else {
+        resultDiv.innerHTML = `<strong style="color:#ff6b6b">${searchName}</strong> এই লিস্টে পাওয়া যায়নি।`;
+    }
+    
+    resultDiv.style.display = "block";
 }
 </script>
 </body>
